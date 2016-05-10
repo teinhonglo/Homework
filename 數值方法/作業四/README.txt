@@ -1,0 +1,1 @@
+一次將六個test case寫在同一個程式，無須輸入任何值，只要執行檔案，即會自動跑完composite midpoint、composite trapezoidal、composite simpson's rule，並將結果顯示出來。

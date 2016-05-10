@@ -1,0 +1,20 @@
+string db2Str(float d){
+    string str;
+    stringstream ss;
+    ss << d;
+    ss >> str;
+    return str;
+}
+
+void write2File(string str){
+    str = "plot( function(x) "+ str +" ,0.9, 13.3) ; abline(h=0,v=0,lty=3)";
+    char filename[]="poly.txt";
+    fstream fp;
+    fp.open(filename, ios::out);
+    if(!fp){
+        cout<<"Fail to open file: "<<filename<<endl;
+    }
+    cout<<"File Descriptor: "<<fp<<endl;
+    fp << str <<endl;
+    fp.close();
+}
