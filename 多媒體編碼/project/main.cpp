@@ -11,9 +11,9 @@ short Gray_Matrix[N_Dimension][N_Dimension];
 double DCT_Matrix[N_Dimension][N_Dimension];
 double IDCT_Matrix[N_Dimension][N_Dimension];
 
-void printArray(double matrix[][N_Dimension], int N){
-    for(int row = 0 ; row < N; row++){
-        for(int col = 0 ; col < N; col++)
+void printArray(double matrix[][N_Dimension], int N_Dimension){
+    for(int row = 0 ; row < N_Dimension; row++){
+        for(int col = 0 ; col < N_Dimension; col++)
             printf("%f ", matrix[row][col]);
         cout << '\n';
     }
@@ -24,12 +24,10 @@ void DCT_Convert(int N, int i_start, int j_start, short matrix[][N_Dimension]){
     double cv = 0;
     double tempDCTSum = 0;
 
-    for(int u = i_start; u < N + i_start; u++)
-    {
-        for(int v = j_start; v < N + j_start; v++)
-        {
+    for(int u = i_start; u < N; u++){
+        for(int v = j_start; v < N; v++){
             int _u = u - i_start;
-            int _v = v - j_start;
+            int _v = u - j_start;
 
             if(_u){
                 cu = 1;
@@ -42,14 +40,12 @@ void DCT_Convert(int N, int i_start, int j_start, short matrix[][N_Dimension]){
                 cv = 1 / sqrt(2);
             }
 
-            for(int i = i_start; i < N + i_start; i++)
-            {
-                for(int j = j_start; j < N + j_start; j++)
-                {
+            for(int i = i_start; i < N; i++){
+                for(int j = j_start; j < N; j++){
                     int _i = i - i_start;
                     int _j = j - j_start;
 
-                    tempDCTSum += matrix[i][j] * cos( (2 * _i  + 1) * _u *PI / (2 * N)) * cos( ( 2 * _j + 1) * _v *PI / (2 * N));
+                    tempDCTSum += matrix[i][j] * cos( (2 * _i  + 1) * _u *PI / (2 * N)) * cos( ( 2 * _j + 1) * _u *PI / (2 * N));
                 }
             }
             DCT_Matrix[u][v] = (2.0 / N ) * cu * cv * tempDCTSum;
@@ -57,32 +53,18 @@ void DCT_Convert(int N, int i_start, int j_start, short matrix[][N_Dimension]){
         }
     }
 }
-void onlyDC (int N, int i_start, int j_start,double DCT[][N_Dimension]){
-    for(int i = i_start; i < N + i_start; i++){
-        for(int j = j_start; j < N + j_start; j++){
-            if ( i == 0 && j == 0){
-                continue;
-            } else{
-                DCT[i][j] = 0;
-            }
-        }
-    }
-}
+
 void Inverse_DCT_Convert(int N, int i_start, int j_start,double DCT[][N_Dimension]){
     double cu = 0;
     double cv = 0;
     double tempDCTSum = 0;
 
-    for(int i = i_start; i < N + i_start; i++)
-    {
-        for(int j = j_start; j < N + j_start; j++)
-        {
-            for(int u = i_start; u < N + i_start; u++)
-            {
-                for(int v = j_start; v < N + j_start; v++)
-                {
+    for(int i = i_start; i < N; i++){
+        for(int j = j_start; j < N; j++){
+            for(int u = i_start; u < N; u++){
+                for(int v = j_start; v < N; v++){
                     int _u = u - i_start;
-                    int _v = v - j_start;
+                    int _v = u - j_start;
                     int _i = i - i_start;
                     int _j = j - j_start;
 
@@ -124,7 +106,7 @@ void file_input(char * FILENAME){
 }
 void file_output(char * FILENAME, double outMat[][N_Dimension]){
     FILE *input;
-    input = fopen(&FILENAME[8], "wb");
+    input = fopen(&FILENAME[11], "wb");
     for(int row = 0; row < N_Dimension; row++){
         for(int col = 0; col < N_Dimension; col++){
             char dct_add = outMat[row][col] + 128;
@@ -136,7 +118,7 @@ void file_output(char * FILENAME, double outMat[][N_Dimension]){
 
 int main() {
 
-    char InputPath[65535] = "RawData";
+    char InputPath[65535] = "../RawData";
     char szDir[65535];
     char FILENAME[65535];
 
@@ -167,6 +149,3 @@ int main() {
     FindClose(hList);
     return 0;
 }
-
-
-
