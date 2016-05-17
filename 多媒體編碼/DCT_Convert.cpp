@@ -24,10 +24,8 @@ void DCT_Convert(int N, int i_start, int j_start, short matrix[][N_Dimension]){
     double cv = 0;
     double tempDCTSum = 0;
 
-    for(int u = i_start; u < N + i_start; u++)
-    {
-        for(int v = j_start; v < N + j_start; v++)
-        {
+    for(int u = i_start; u < N + i_start; u++){
+        for(int v = j_start; v < N + j_start; v++){
             int _u = u - i_start;
             int _v = v - j_start;
 
@@ -42,10 +40,8 @@ void DCT_Convert(int N, int i_start, int j_start, short matrix[][N_Dimension]){
                 cv = 1 / sqrt(2);
             }
 
-            for(int i = i_start; i < N + i_start; i++)
-            {
-                for(int j = j_start; j < N + j_start; j++)
-                {
+            for(int i = i_start; i < N + i_start; i++){
+                for(int j = j_start; j < N + j_start; j++){
                     int _i = i - i_start;
                     int _j = j - j_start;
 
@@ -57,10 +53,11 @@ void DCT_Convert(int N, int i_start, int j_start, short matrix[][N_Dimension]){
         }
     }
 }
+
 void onlyDC (int N, int i_start, int j_start,double DCT[][N_Dimension]){
     for(int i = i_start; i < N + i_start; i++){
         for(int j = j_start; j < N + j_start; j++){
-            if ( i == 0 && j == 0){
+            if ( i == i_start && j == j_start){
                 continue;
             } else{
                 DCT[i][j] = 0;
@@ -68,19 +65,42 @@ void onlyDC (int N, int i_start, int j_start,double DCT[][N_Dimension]){
         }
     }
 }
+
+void remainDiag (int N, int i_start, int j_start, double DCT[][N_Dimension]){
+    for(int i = i_start; i < N + i_start; i++){
+        for(int j = j_start; j < N + j_start; j++){
+            int _i = i - i_start;
+            int _j = j - j_start;
+            if (_i + _j <= 6){
+                continue;
+            } else{
+                DCT[i][j] = 0;
+            }
+        }
+    }
+}
+
+void top3row (int N, int i_start, int j_start, double DCT[][N_Dimension]){
+    for(int i = i_start + 3; i < N + i_start; i++)
+        for(int j = j_start; j < N + j_start; j++)
+            DCT[i][j] = 0;
+}
+
+void top3col (int N, int i_start, int j_start, double DCT[][N_Dimension]){
+    for(int i = i_start; i < N + i_start; i++)
+        for(int j = j_start + 3; j < N + j_start; j++)
+            DCT[i][j] = 0;
+}
+
 void Inverse_DCT_Convert(int N, int i_start, int j_start,double DCT[][N_Dimension]){
     double cu = 0;
     double cv = 0;
     double tempDCTSum = 0;
 
-    for(int i = i_start; i < N + i_start; i++)
-    {
-        for(int j = j_start; j < N + j_start; j++)
-        {
-            for(int u = i_start; u < N + i_start; u++)
-            {
-                for(int v = j_start; v < N + j_start; v++)
-                {
+    for(int i = i_start; i < N + i_start; i++){
+        for(int j = j_start; j < N + j_start; j++){
+            for(int u = i_start; u < N + i_start; u++){
+                for(int v = j_start; v < N + j_start; v++){
                     int _u = u - i_start;
                     int _v = v - j_start;
                     int _i = i - i_start;
@@ -127,7 +147,7 @@ void file_output(char * FILENAME, double outMat[][N_Dimension]){
     input = fopen(&FILENAME[8], "wb");
     for(int row = 0; row < N_Dimension; row++){
         for(int col = 0; col < N_Dimension; col++){
-            char dct_add = outMat[row][col] + 128;
+            char dct_add = outMat[row][col];
             fwrite(&dct_add, sizeof(char), 1, input);
         }
     }
@@ -135,14 +155,14 @@ void file_output(char * FILENAME, double outMat[][N_Dimension]){
 }
 
 int main() {
-
+    // file path
     char InputPath[65535] = "RawData";
     char szDir[65535];
     char FILENAME[65535];
 
     WIN32_FIND_DATA FileData;
     HANDLE          hList;
-
+    // scan directory file
     sprintf(szDir, "%s\\*", InputPath );
     if ( (hList = FindFirstFile(szDir, &FileData))==INVALID_HANDLE_VALUE )
         printf("No files be found.\n\n");
@@ -154,9 +174,11 @@ int main() {
             }
             sprintf(FILENAME, "%s\\%s", InputPath, FileData.cFileName);
             file_input(FILENAME);
+            // do 8*8 block scan
             for(int i = 0 ; i <= 56; i += 8){
                 for(int j = 0; j <= 56; j += 8){
                     DCT_Convert(8, i, j, Gray_Matrix);
+                    remainDiag(8, i, j, DCT_Matrix);
                     Inverse_DCT_Convert(8, i, j, DCT_Matrix);
                 }
             }
@@ -167,6 +189,3 @@ int main() {
     FindClose(hList);
     return 0;
 }
-
-
-
