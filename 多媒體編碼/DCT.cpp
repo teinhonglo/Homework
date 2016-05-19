@@ -127,7 +127,7 @@ void Inverse_DCT_Convert(int N, int i_start, int j_start,double DCT[][N_Dimensio
 void file_input(char * FILENAME){
     FILE *input;
     short get_byte;
-    input = fopen(FILENAME, "r");
+    input = fopen(FILENAME, "rb");
 
     int curRow = 0;
     int curCol = 0;

@@ -8,8 +8,12 @@
 
 using namespace std;
 const int N_Dimension = 256;
-short Chrom_Matrix[N_Dimension][N_Dimension];
-double Lumin_Matrix[N_Dimension][N_Dimension];
+short B[N_Dimension][N_Dimension];
+short G[N_Dimension][N_Dimension];
+short R[N_Dimension][N_Dimension];
+double Y[N_Dimension][N_Dimension];
+double CR[N_Dimension][N_Dimension];
+double CB[N_Dimension][N_Dimension];
 double DCT_Matrix[N_Dimension][N_Dimension];
 double IDCT_Matrix[N_Dimension][N_Dimension];
 
@@ -18,10 +22,10 @@ struct index {
     int j;
 };
 
-void printArray(double matrix[][N_Dimension], int N){
+void printArray(short matrix[][N_Dimension], int N){
     for(int row = 0 ; row < N; row++){
         for(int col = 0 ; col < N; col++)
-            printf("%f ", matrix[row][col]);
+            printf("%x ", matrix[row][col]);
         cout << '\n';
     }
 }
@@ -135,145 +139,85 @@ void Inverse_DCT_Convert(int N, int i_start, int j_start,double DCT[][N_Dimensio
 void file_input(char * FILENAME){
     FILE *input;
     short get_byte;
-    input = fopen(FILENAME, "r");
+    input = fopen(FILENAME, "rb");
 
     int curRow = 0;
     int curCol = 0;
-
+    int does = 0;
+    int c = 0;
     while((get_byte = fgetc(input))!= EOF){
-        Chrom_Matrix[curRow][curCol];
-        curCol++;
-        if(curCol >= N_Dimension){
-            curRow++;
-            curCol %= N_Dimension;
+        if(does > 2){
+            does %= 3;
+            curCol++;
+            if(curCol >= N_Dimension){
+                curRow++;
+                curCol %= N_Dimension;
+            }
+
         }
+        switch(does){
+            case 0:
+                B[curRow][curCol] = get_byte;
+                break;
+            case 1:
+                G[curRow][curCol] = get_byte;
+                break;
+            case 2:
+                R[curRow][curCol] = get_byte;
+                break;
+        }
+        does++;
+        c++;
     }
+    printf("%x ", c);
     fclose(input);
 }
 
-void file_output(char * FILENAME, double outMat[][N_Dimension]){
+void file_output(char * FILENAME, short B[][N_Dimension], short G[][N_Dimension], short R[][N_Dimension]){
     FILE *input;
     input = fopen(&FILENAME[11], "wb");
     for(int row = 0; row < N_Dimension; row++){
         for(int col = 0; col < N_Dimension; col++){
-            char dct_add = outMat[row][col];
-            fwrite(&dct_add, sizeof(char), 1, input);
+            fwrite(&B[row][col], sizeof(char), 1, input);
+            fwrite(&G[row][col], sizeof(char), 1, input);
+            fwrite(&R[row][col], sizeof(char), 1, input);
         }
     }
     fclose(input);
 }
 
-void chrom2Lumin(int N, short Chrom_Matrix[][N_Dimension]){
-    int does = 0;
-    short B = 0;
-    short G = 0;
-    short R = 0;
-    queue <index> idxQueue;
-
+void chrom2Lumin(int N, short B[][N_Dimension], short G[][N_Dimension], short R[][N_Dimension]){
     for(int i = 0; i < N; i++){
         for(int j = 0; j < N; j++){
-            if(does > 2){
-                index Idx = idxQueue.front();
-                int i_st = Idx.i;
-                int j_st = Idx.j;
-                idxQueue.pop();
+            Y[i][j]  = 0.299 * R[i][j] + 0.587 * G[i][j] + 0.144 * B[i][j];        // Y
+            CB[i][j] = 0.564 * (B[i][j] - Y[i][j]);                                 // CB
+            CR[i][j] = 0.713 * (R[i][j] - Y[i][j]);                                 // CR
+        }
+    }
 
-                Idx = idxQueue.front();
-                int i_nd = Idx.i;
-                int j_nd = Idx.j;
-                idxQueue.pop();
+}
 
-                Idx = idxQueue.front();
-                int i_rd = Idx.i;
-                int j_rd = Idx.j;
-                idxQueue.pop();
-                /**
-                B = Chrom_Matrix[i_st][j_st];
-                G = Chrom_Matrix[i_nd][j_nd];
-                R = Chrom_Matrix[i_rd][j_rd];
-                **/
-                Lumin_Matrix[i_st][j_st]  = 0.299 * R + 0.587 * G + 0.144 * B;      // Y
-                Lumin_Matrix[i_nd][j_nd] = 0.564 * (B - Lumin_Matrix[i_st][j_st]);  // CB
-                Lumin_Matrix[i_rd][j_rd] = 0.299 * (R - Lumin_Matrix[i_st][j_st]);                  // CR
-                does %= 3;
-            }else{
-                index curIdx;
-                curIdx.i = i;
-                curIdx.j = j;
-                idxQueue.push(curIdx);
-                does++;
-                switch(does){
-                    case 0:
-                        B = Chrom_Matrix[i][j];
-                        break;
-                    case 1:
-                        G = Chrom_Matrix[i][j];
-                        break;
-                    case 2:
-                        R = Chrom_Matrix[i][j];
-                        break;
-                }
-            }
+void lumin2Chrom(int N, double Y[][N_Dimension], double CR[][N_Dimension], double CB[][N_Dimension]){
+    for(int i = 0; i < N; i++){
+        for(int j = 0; j < N; j++){
+            R[i][j] = (short)(Y[i][j] + 1.402 * CR[i][j]);
+            G[i][j] = (short)(Y[i][j] - 0.344 * CB[i][j] - 0.714 * CR[i][j]);
+            B[i][j] = (short)(Y[i][j] + 1.772 * CB[i][j]);
         }
     }
 }
-
-void lumin2Chrom(int N, double Lumin_Matrix[][N_Dimension]){
-    int does = 0;
-    double Y = 0;
-    double CB = 0;
-    double CR = 0;
-    queue <index> idxQueue;
-
-    for(int i = 0; i < N; i++){
-        for(int j = 0; j < N; j++){
-            if(does > 2){
-                index Idx = idxQueue.front();
-                int i_st = Idx.i;
-                int j_st = Idx.j;
-                idxQueue.pop();
-
-                Idx = idxQueue.front();
-                int i_nd = Idx.i;
-                int j_nd = Idx.j;
-                idxQueue.pop();
-
-                Idx = idxQueue.front();
-                int i_rd = Idx.i;
-                int j_rd = Idx.j;
-                idxQueue.pop();
-                /**
-                CY = Lumin_Matrix[i_st][j_st];
-                CB = Lumin_Matrix[i_nd][j_nd];
-                CR = Lumin_Matrix[i_rd][j_rd];
-                **/
-                Chrom_Matrix[i_st][j_st] = (short)(Y + 1.402 * CR);
-                Chrom_Matrix[i_nd][j_nd] = (short)(Y - 0.344 * CB - 0.714 * CR);
-                Chrom_Matrix[i_nd][j_nd] = (short)(Y + 1.772 * CB);            // CR
-                does %= 3;
-            }else{
-                index curIdx;
-                curIdx.i = i;
-                curIdx.j = j;
-                idxQueue.push(curIdx);
-                does++;
-                switch(does){
-                    case 0:
-                        Y = Lumin_Matrix[i][j];
-                        break;
-                    case 1:
-                        CB = Lumin_Matrix[i][j];
-                        break;
-                    case 2:
-                        CR = Lumin_Matrix[i][j];
-                        break;
-                }
-            }
+void sampling(int N, int i_start, int j_start, double Y[][N_Dimension], double CR[][N_Dimension], double CB[][N_Dimension]){
+    // 4:1:1
+    double avg_CR = 0;
+    double avg_CB = 0;
+    for(int i = i_start; i < N + i_start; i += 2){
+        for(int j = j_start; j < N + j_start; j += 2){
+            avg_CR = ( CR[i][j] + CR[i+1][j] + CR[i][j+1] + CR[i+1][j+1]) / 4;
+            avg_CB = ( CB[i][j] + CB[i+1][j] + CB[i][j+1] + CB[i+1][j+1]) / 4;
+            CR[i][j] = CR[i+1][j] = CR[i][j+1] = CR[i+1][j+1] = avg_CR;
+            CB[i][j] = CB[i+1][j] = CB[i][j+1] = CB[i+1][j+1] = avg_CB;
         }
     }
-}
-void sampling(int N, double Lumin_Matrix){
-
 }
 int main() {
     // file path
@@ -295,16 +239,15 @@ int main() {
             }
             sprintf(FILENAME, "%s\\%s", InputPath, FileData.cFileName);
             file_input(FILENAME);
-            chrom2Lumin(N_Dimension, Chrom_Matrix);
-            // do 8*8 block scan
-            for(int i = 0 ; i <= N_Dimension; i += 16){
-                for(int j = 0; j <= N_Dimension; j += 16){
-                    //DCT_Convert(8, i, j, Gray_Matrix);
-                    //Inverse_DCT_Convert(8, i, j, DCT_Matrix);
+            //16* 16 block sampling
+            chrom2Lumin(N_Dimension, B, G, R);
+            for (int i = 0; i < N_Dimension; i += 16){
+                for(int j = 0; j < N_Dimension; j += 16){
+                    sampling(16, i, j, Y, CR, CB);
                 }
             }
-            lumin2Chrom(N_Dimension, Lumin_Matrix);
-            file_output(FILENAME, IDCT_Matrix);
+            lumin2Chrom(N_Dimension, Y, CR, CB);
+            file_output(FILENAME, B, G, R);
             printf("%s\n", FILENAME);
         }
     }
